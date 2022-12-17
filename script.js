@@ -27,6 +27,29 @@ window.addEventListener("load", function () {
       });
     }
   }
+  class SoundController {
+    constructor() {
+      this.powerUpSound = document.getElementById("powerup");
+      this.powerDownSound = document.getElementById("powerdown");
+      this.explosionSound = document.getElementById("explosion");
+      this.shotSound = document.getElementById("shot");
+      this.powerUpSound = document.getElementById("hit");
+      this.powerUpSound = document.getElementById("shieldSound");
+    }
+    powerUp() {
+      this.powerUpSound.currentTime = 0;
+      this.powerDownSound.play();
+    }
+    powerDown() {
+      this.powerUpSound.currentTime = 0;
+      this.powerUpSound.play();
+    }
+    explosion() {
+      this.powerUpSound.currentTime = 0;
+      this.explosionSound.play();
+    }
+  }
+
   class Projectile {
     constructor(game, x, y) {
       this.game = game;
@@ -148,6 +171,7 @@ window.addEventListener("load", function () {
           this.powerUpTimer = 0;
           this.powerUp = false;
           this.frameY = 0;
+          this.game.sound.powerDown();
         } else {
           this.powerUpTimer += deltaTime;
           this.frameY = 1;
@@ -194,6 +218,7 @@ window.addEventListener("load", function () {
       this.powerUp = true;
       if (this.game.ammo < this.game.maxAmmo)
         this.game.ammo = this.game.maxAmmo;
+      this.game.sound.powerUp();
     }
   }
   class Enemy {
@@ -295,11 +320,38 @@ window.addEventListener("load", function () {
       this.x = x;
       this.y = y;
       this.image = document.getElementById("drone");
-      this.frameY = Math.floor(Math.random() * 2);
+      this.frameY = 0;
       this.lives = 3;
       this.score = this.lives;
       this.type = "drone";
       this.speedX = Math.random() * -4.2 - 0.2;
+    }
+  }
+  class BulbWhale extends Enemy {
+    constructor(game) {
+      super(game);
+      this.width = 270;
+      this.height = 219;
+      this.y = Math.random() * (this.game.height * 0.95 - this.height);
+      this.image = document.getElementById("bulbwhale");
+      this.frameY = Math.floor(Math.random() * 2);
+      this.lives = 20;
+      this.score = this.lives;
+      this.speedX = Math.random() * -1.2 - 0.2;
+    }
+  }
+  class MoonFish extends Enemy {
+    constructor(game) {
+      super(game);
+      this.width = 227;
+      this.height = 240;
+      this.y = Math.random() * (this.game.height * 0.95 - this.height);
+      this.image = document.getElementById("moonfish");
+      this.frameY = Math.floor(Math.random() * 2);
+      this.lives = 10;
+      this.score = this.lives;
+      this.speedX = Math.random() * -1.2 - 2;
+      this.type = "moon";
     }
   }
   class Layer {
@@ -453,6 +505,7 @@ window.addEventListener("load", function () {
       this.player = new Player(this);
       this.input = new InputHander(this);
       this.ui = new UI(this);
+      this.sound = new SoundController();
       this.keys = [];
       this.enemies = [];
       this.particles = [];
@@ -506,7 +559,7 @@ window.addEventListener("load", function () {
             );
           }
           if (enemy.type === "lucky") this.player.enterPowerUp();
-          else if(!this.gameOver) this.score--;
+          else if (!this.gameOver) this.score--;
         }
         this.player.projectiles.forEach((projectile) => {
           if (this.checkCollision(projectile, enemy)) {
@@ -533,6 +586,7 @@ window.addEventListener("load", function () {
               }
               enemy.markedForDeletion = true;
               this.addExplsion(enemy);
+              if (enemy.type === "moon") this.player.enterPowerUp();
               if (enemy.type === "hive") {
                 for (let i = 0; i < 5; i++) {
                   this.enemies.push(
@@ -576,6 +630,8 @@ window.addEventListener("load", function () {
       if (randomize < 0.3) this.enemies.push(new Angler1(this));
       else if (randomize < 0.6) this.enemies.push(new Angler2(this));
       else if (randomize < 0.7) this.enemies.push(new HiveWhale(this));
+      else if (randomize < 0.8) this.enemies.push(new BulbWhale(this));
+      else if (randomize < 0.9) this.enemies.push(new MoonFish(this));
       else this.enemies.push(new LuckyFish(this));
     }
     addExplsion(enemy) {
