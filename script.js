@@ -33,8 +33,8 @@ window.addEventListener("load", function () {
       this.powerDownSound = document.getElementById("powerdown");
       this.explosionSound = document.getElementById("explosion");
       this.shotSound = document.getElementById("shot");
-      this.powerUpSound = document.getElementById("hit");
-      this.powerUpSound = document.getElementById("shieldSound");
+      this.hitSound = document.getElementById("hit");
+      this.shieldSound = document.getElementById("shieldSound");
     }
     powerUp() {
       this.powerUpSound.currentTime = 0;
@@ -45,11 +45,62 @@ window.addEventListener("load", function () {
       this.powerUpSound.play();
     }
     explosion() {
-      this.powerUpSound.currentTime = 0;
+      this.explosionSound.currentTime = 0;
       this.explosionSound.play();
     }
+    shot() {
+      this.shotSound.currentTime = 0;
+      this.shotSound.play();
+    }
+    hit() {
+      this.hitSound.currentTime = 0;
+      this.hitSound.play();
+    }
+    shield() {
+      this.shieldSound.currentTime = 0;
+      this.shieldSound.play();
+    }
   }
-
+  class Shield {
+    constructor(game) {
+      this.game = game;
+      this.width = this.game.player.width;
+      this.height = this.game.player.height;
+      this.frameX = 0;
+      this.maxFrame = 24;
+      this.image = document.getElementById("shield");
+      this.fps = 30;
+      this.timer = 0;
+      this.interval = 1000 / this.fps;
+    }
+    update(deltaTime) {
+      if (this.frameX <= this.maxFrame) {
+        if (this.timer > this.interval) {
+          this.frameX++;
+          this.timer = 0;
+        } else {
+          this.timer += deltaTime;
+        }
+      }
+    }
+    draw(context) {
+      context.drawImage(
+        this.image,
+        this.frameX * this.width,
+        0,
+        this.width,
+        this.height,
+        this.game.player.x,
+        this.game.player.y,
+        this.width,
+        this.height
+      );
+    }
+    reset() {
+      this.frameX = 0;
+      this.game.sound.shield();
+    }
+  }
   class Projectile {
     constructor(game, x, y) {
       this.game = game;
@@ -67,8 +118,6 @@ window.addEventListener("load", function () {
     }
     draw(context) {
       context.drawImage(this.image, this.x, this.y);
-      // context.fillStyle = "yellow";
-      // context.fillRect(this.x, this.y, this.width, this.height);
     }
   }
   class Particle {
@@ -204,6 +253,7 @@ window.addEventListener("load", function () {
         );
         this.game.ammo--;
       }
+      this.game.sound.shot();
       if (this.powerUp) this.shootBottom();
     }
     shootBottom() {
@@ -506,6 +556,7 @@ window.addEventListener("load", function () {
       this.input = new InputHander(this);
       this.ui = new UI(this);
       this.sound = new SoundController();
+      this.shield = new Shield(this);
       this.keys = [];
       this.enemies = [];
       this.particles = [];
@@ -536,6 +587,7 @@ window.addEventListener("load", function () {
       } else {
         this.ammoTimer += deltaTime;
       }
+      this.shield.update(deltaTime);
       this.particles.forEach((particle) => particle.update());
       this.particles = this.particles.filter(
         (particle) => !particle.markedForDeletion
@@ -549,6 +601,8 @@ window.addEventListener("load", function () {
         if (this.checkCollision(this.player, enemy)) {
           enemy.markedForDeletion = true;
           this.addExplsion(enemy);
+          this.sound.hit();
+          this.shield.reset();
           for (let i = 0; i < enemy.score; i++) {
             this.particles.push(
               new Particle(
@@ -586,6 +640,7 @@ window.addEventListener("load", function () {
               }
               enemy.markedForDeletion = true;
               this.addExplsion(enemy);
+              this.sound.explosion();
               if (enemy.type === "moon") this.player.enterPowerUp();
               if (enemy.type === "hive") {
                 for (let i = 0; i < 5; i++) {
@@ -616,6 +671,7 @@ window.addEventListener("load", function () {
       this.background.draw(context);
       this.ui.draw(context);
       this.player.draw(context);
+      this.shield.draw(context);
       this.particles.forEach((particle) => particle.draw(context));
       this.enemies.forEach((enemy) => {
         enemy.draw(context);
@@ -653,7 +709,6 @@ window.addEventListener("load", function () {
           )
         );
       }
-      console.log(this.explosions);
     }
     checkCollision(rect1, rect2) {
       return (
